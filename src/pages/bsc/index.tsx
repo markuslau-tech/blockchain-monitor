@@ -1,10 +1,8 @@
-import {
-  getLatestBlock,
-  getMarketPrice,
-} from '@/blockchain-client/bsc';
+import BinanceSmartChainClient from '@/blockchain-client/bsc';
 import { useEffect, useState } from 'react';
 import Dashboard from '../components/dashboard';
 import Loading from '../components/loading';
+import { Transaction } from '../components/types';
 
 export default function BinanceSmartChain() {
   const [loading, setLoading] = useState(false);
@@ -14,17 +12,21 @@ export default function BinanceSmartChain() {
     lastPrice: 0,
     priceChangePercent: 0,
   });
-  const [txs, setTxs] = useState([]);
+  const [txs, setTxs] = useState<Transaction[]>([]);
 
   useEffect(() => {
     setLoading(true);
 
-    getMarketPrice().then((price) => setPrice(price));
+    const client = new BinanceSmartChainClient();
 
-    getLatestBlock().then((block) => {
-      setCurrentHeight(parseInt(block.number));
-      setTxs(block.transactions.reverse());
-      setLoading(false);
+    client.getMarketPrice().then((price) => setPrice(price));
+
+    client.getBlockNumber().then((blockNumber) => {
+      setCurrentHeight(blockNumber);
+      client.getBlock(blockNumber).then((block) => {
+        setTxs(block.transactions.reverse().slice(0, 10));
+        setLoading(false);
+      });
     });
   }, []);
 

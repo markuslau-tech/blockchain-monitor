@@ -1,12 +1,10 @@
-import {
-  getLatestBlock,
-  getMarketPrice,
-} from '@/blockchain-client/eth';
+import EthereumClient from '@/blockchain-client/eth';
 import { useEffect, useState } from 'react';
 import Dashboard from '../components/dashboard';
 import Loading from '../components/loading';
+import { Transaction } from '../components/types';
 
-export default function Eth() {
+export default function Ethereum() {
   const [loading, setLoading] = useState(false);
   const [currentHeight, setCurrentHeight] = useState(0);
   const [price, setPrice] = useState({
@@ -14,17 +12,21 @@ export default function Eth() {
     lastPrice: 0,
     priceChangePercent: 0,
   });
-  const [txs, setTxs] = useState([]);
+  const [txs, setTxs] = useState<Transaction[]>([]);
 
   useEffect(() => {
     setLoading(true);
 
-    getMarketPrice().then((price) => setPrice(price));
+    const client = new EthereumClient();
 
-    getLatestBlock().then((block) => {
-      setCurrentHeight(parseInt(block.number));
-      setTxs(block.transactions.reverse());
-      setLoading(false);
+    client.getMarketPrice().then((price) => setPrice(price));
+
+    client.getBlockNumber().then((blockNumber) => {
+      setCurrentHeight(blockNumber);
+      client.getBlock(blockNumber).then((block) => {
+        setTxs(block.transactions.reverse().slice(0, 10));
+        setLoading(false);
+      });
     });
   }, []);
 
